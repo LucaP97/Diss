@@ -1,9 +1,0 @@
-aws_access_key_id = 'AKIAVA5QCSFH3VRRSLPM'
-aws_secret_access_key = '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'
-
-twitter_api_key = "gPGftSOyDAbbf5F1UnYj2BeHy"
-twitter_api_secret_key = "dbQ8HzeRclw9xyX3W1mO1V7EAYxrXFT6UunsQNUp3TvuSh8p8o"
-twitter_access_token = "172359968-pP2Vg7qNcgKkr52t1ilAXHLH7wn6ez79CZE4V3AO"
-twitter_access_token_secret = "MOQAFUx21jtL77aItla3rwhl5v8QjvYPm3TKOZKrx3Rtu"
-
-rapid_api_key = "6970455e43msh7db0e14b3d056d3p1e4cf5jsnd6e2df2b5622"
