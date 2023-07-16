@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,20 +32,23 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'users',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'django_filters',
     'rest_framework',
     'djoser',
-    'users',
     'data',
     'debug_toolbar',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -52,8 +56,12 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware'
+    ,
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 ROOT_URLCONF = 'mysite.urls'
 
@@ -92,6 +100,9 @@ DATABASES = {
         'PASSWORD': 'toor',
         'HOST': 'localhost',
         'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 
@@ -131,12 +142,15 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'PAGE_SIZE': 10,
 }
 
 SIMPLE_JWT = {
    'AUTH_HEADER_TYPES': ('JWT',),
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
 }
 
+AUTH_USER_MODEL = "users.User"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
@@ -149,4 +163,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-AUTH_USER_MODEL = "users.User"
+STATIC_URL = '/static/'
+# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+MEDIA_URL = '/media/'

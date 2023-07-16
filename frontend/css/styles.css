@@ -1,0 +1,5 @@
+.tweet-image {
+    width: 200px;  /* Adjust as needed */
+    height: 200px;  /* Adjust as needed */
+    object-fit: cover;  /* This will ensure that the image covers the whole area without distorting the aspect ratio */
+}

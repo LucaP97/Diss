@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Recommendations</title>
+  </head>
+  <body>
+    <h1>Recommendations</h1>
+    {% for recommendation in recommendations %}
+    <div class="tweet">
+      <p>ID: {{ recommendation.tweet.id }}</p>
+      <p>Text: {{ recommendation.tweet.text }}</p>
+      <p>Created At: {{ recommendation.tweet.created_at }}</p>
+      <p>Retweet Count: {{ recommendation.tweet.retweet_count }}</p>
+      <p>Favorite Count: {{ recommendation.tweet.favorite_count }}</p>
+      <p>
+        Tweet URL:
+        <a href="{{ recommendation.tweet.tweet_url }}"
+          >{{ recommendation.tweet.tweet_url }}</a
+        >
+      </p>
+      <p>Media URLs: {{ recommendation.tweet.media_urls }}</p>
+      {% for url in recommendation.tweet.media_urls %}
+      <img src="{{ url }}" />
+      {% endfor %}
+      <p>Included URLs: {{ recommendation.tweet.included_urls }}</p>
+    </div>
+    <hr />
+    {% endfor %}
+  </body>
+</html>
