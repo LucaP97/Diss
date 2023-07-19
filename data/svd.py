@@ -6,27 +6,22 @@ from surprise.model_selection import train_test_split
 import pandas as pd
 import mysql.connector
 
-# Setup MySQL connection
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    passwd="toor",  # replace with your MySQL root password
-    database="dissdb"  # replace with your database name if it's different
+    passwd="toor",
+    database="dissdb"
 )
 
-# Create a cursor
 cursor = db.cursor()
 
-# Execute SQL query
 cursor.execute("SELECT user_id, tweet_id, rating FROM data_rating")
 
-# Fetch all the records
 tuples = cursor.fetchall()
 
 # Convert tuples to pandas DataFrame
 df_ratings = pd.DataFrame(tuples, columns=["user_id", "tweet_id", "rating"])
 
-# Close the cursor and connection
 cursor.close()
 db.close()
 
@@ -41,7 +36,7 @@ algo_SVD = SVD()
 algo_SVDpp = SVDpp()
 algo_random = NormalPredictor()
 
-# Run 5-fold cross-validation for each algorithm and then print results
+# Run 5-fold cross-validation for each algorithm
 print("Running cross-validation for SVD...")
 cross_validate(algo_SVD, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
 

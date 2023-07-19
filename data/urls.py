@@ -5,7 +5,7 @@ from . import views
 
 router = routers.DefaultRouter()
 # router.register()
-router.register('profile', views.ProfileViewSet)
+router.register('profile', views.ProfileViewSet, basename='profile')
 router.register('tweets', views.TweetViewSet)
 router.register('ratings', views.RatingViewSet, basename='ratings')
 router.register('recommendations', views.RecommendationsViewSet, basename='recommendations')

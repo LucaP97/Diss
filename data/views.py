@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.filters import SearchFilter 
 from rest_framework.decorators import action
 from rest_framework import status
@@ -191,8 +191,14 @@ from config import *
     
 
 class ProfileViewSet(ModelViewSet):
-    queryset = Profile.objects.all()
-    # serializer_class = ProfileSerializer
+    def get_queryset(self):
+        if self.request.user.is_authenticated and self.request.user.is_superuser:
+            return Profile.objects.all()
+        if self.request.user.is_authenticated:
+            return Profile.objects.filter(user=self.request.user)
+        else:
+            return status.HTTP_401_UNAUTHORIZED
+
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return ProfileRegistrationSerializer
@@ -200,21 +206,16 @@ class ProfileViewSet(ModelViewSet):
         
 
 class RatingViewSet(ModelViewSet):
-    ### commment this after populating the database
-    # queryset = Rating.objects.all()
-    # serializer_class = RatingSerializer
     http_method_names = ['get', 'post', 'put']
 
     def get_queryset(self):
         return Rating.objects.filter(tweet_id=self.kwargs['tweet_pk'])
 
-    ### uncomment this after populating the database
     def get_permissions(self):
         if self.request.method == 'POST' or self.request.method == 'PUT':
             return [IsAuthenticated()]
         return super().get_permissions()
     
-    ### uncomment this after populating the database
     def get_serializer_class(self):
         if self.request.method == 'POST' or self.request.method == 'PUT':
             return RatingSimpleSerializer
@@ -251,9 +252,9 @@ class RecommendationsViewSet(ModelViewSet):
 
     def get_queryset(self):
         # return Recommendation.objects.filter(user=self.request.user).prefetch_related('tweet__ratings')
-        return Recommendation.objects.filter(user_id=155).prefetch_related('tweet__ratings')
+        return SVDRecommendations.objects.filter(user_id=155).prefetch_related('tweet__ratings')
 
-    serializer_class = RecommendationSerializer
+    serializer_class = SVDRecommendationSerializer
 
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['user']
@@ -269,9 +270,9 @@ def recommendations_page(request):
     print('is authenticated: ' + str(request.user.is_authenticated))
     # does not work, I cannot authenticate myself on the frontend
     if request.user.is_authenticated:
-        recommendations = Recommendation.objects.filter(user_id=request.user.id).prefetch_related('tweet__ratings')
+        recommendations = SVDRecommendations.objects.filter(user_id=request.user.id).prefetch_related('tweet__ratings')
     else:
         # recommendations = []
-        recommendations = Recommendation.objects.all().prefetch_related('tweet__ratings')
+        recommendations = SVDRecommendations.objects.all().prefetch_related('tweet__ratings')
     return render(request, 'recommendations_page.html', {'recommendations': recommendations})
 

@@ -3,10 +3,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from jsonfield import JSONField
 
-# Create your models here.
-class SearchData(models.Model):
-    pass
-
 class Tweets(models.Model):
     text = models.CharField(max_length=400)
     created_at = models.DateTimeField()
@@ -34,6 +30,18 @@ class Rating(models.Model):
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
-class Recommendation(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recommendations')
-    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE, related_name='recommendations')
+class SVDRecommendations(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='svd_recommendations')
+    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE, related_name='svd_recommendations')
+
+class HybridRecommendations(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hybrid_recommendations')
+    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE, related_name='hybrid_recommendations')
+
+class KNNRecommendations(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='knn_recommendations')
+    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE, related_name='knn_recommendations')
+
+class TFRSRecommendations(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tfrs_recommendations')
+    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE, related_name='tfrs_recommendations')

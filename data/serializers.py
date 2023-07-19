@@ -154,9 +154,9 @@ class TweetSimpleSerializer(serializers.ModelSerializer):
 # Recommendations
 ###################
 
-class RecommendationSerializer(serializers.ModelSerializer):
+class SVDRecommendationSerializer(serializers.ModelSerializer):
     tweet = TweetSimpleSerializer()
     class Meta:
-        model = Recommendation
+        model = SVDRecommendations
         fields = ['id', 'user', 'tweet']
 
