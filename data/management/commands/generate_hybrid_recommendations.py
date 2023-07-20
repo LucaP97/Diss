@@ -11,30 +11,24 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        # Fetch all the records using Django's ORM
         ratings = Rating.objects.all().values_list('user__id', 'tweet__id', 'rating')
 
         # Convert tuples to pandas DataFrame
         df_ratings = pd.DataFrame(ratings, columns=["user_id", "tweet_id", "rating"])
 
-        # A reader is still needed but only the rating_scale param is required.
         reader = Reader(rating_scale=(1, 5))
 
         # The columns must correspond to user id, item id and ratings (in that order).
         data = Dataset.load_from_df(df_ratings[['user_id', 'tweet_id', 'rating']], reader)
 
-        # Define the algorithm objects
-        algo_SVD = SVD()
-        algo_KNN = KNNBasic(sim_options={'name': 'pearson_baseline', 'user_based': True})  # User-based KNN
+        algo_SVD = SVD(n_epochs=10, lr_all=0.001, reg_all=1)
+        algo_KNN = KNNBasic(k=20, sim_options={'name': 'pearson_baseline', 'user_based': False})  # User-based KNN
 
-        # Split the dataset into training set and test set
         trainset, testset = train_test_split(data, test_size=0.2)
 
-        # Train all algorithms on the training set
         algo_SVD.fit(trainset)
         algo_KNN.fit(trainset)
 
-        # Test on the testset
         predictions_SVD = algo_SVD.test(testset)
         predictions_KNN = algo_KNN.test(testset)
 
@@ -46,10 +40,9 @@ class Command(BaseCommand):
         # Predict ratings for all pairs (u, i) that are NOT in the training set.
         antitestset = trainset.build_anti_testset()
 
-        predictions_SVD_antitestset = algo_SVD.test(antitestset)  # Get predictions from SVD
-        predictions_KNN_antitestset = algo_KNN.test(antitestset)  # Get predictions from User-based KNN
+        predictions_SVD_antitestset = algo_SVD.test(antitestset)  
+        predictions_KNN_antitestset = algo_KNN.test(antitestset)  
 
-        # Combine predictions
         combined_predictions = []
 
         for prediction_svd, prediction_knn in zip(predictions_SVD_antitestset, predictions_KNN_antitestset):
@@ -57,9 +50,8 @@ class Command(BaseCommand):
             avg_rating = (prediction_svd.est + prediction_knn.est) / 2
             combined_predictions.append((prediction_svd.uid, prediction_svd.iid, avg_rating))
 
-        top_n_combined = self.get_top_n(combined_predictions, n=10)  # Get top 10 recommendations from combined predictions
+        top_n_combined = self.get_top_n(combined_predictions, n=10)
 
-        # Print the recommended items for each user and save it to Recommendation model in Django
         for uid, user_ratings in top_n_combined.items():
             user = User.objects.get(id=uid)
             for iid, _ in user_ratings:

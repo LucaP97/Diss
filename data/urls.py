@@ -8,7 +8,10 @@ router = routers.DefaultRouter()
 router.register('profile', views.ProfileViewSet, basename='profile')
 router.register('tweets', views.TweetViewSet)
 router.register('ratings', views.RatingViewSet, basename='ratings')
-router.register('recommendations', views.RecommendationsViewSet, basename='recommendations')
+router.register('svd_recommendations', views.SVDRecommendationsViewSet, basename='svd_recommendations')
+router.register('hybrid_recommendations', views.HybridRecommendationsViewSet, basename='hybrid_recommendations')
+router.register('knn_recommendations', views.KNNRecommendationsViewSet, basename='knn_recommendations')
+router.register('tfrs_recommendations', views.TFRSRecommendationsViewSet, basename='tfrs_recommendations')
 
 
 tweets_router = routers.NestedDefaultRouter(router, 'tweets', lookup='tweet')

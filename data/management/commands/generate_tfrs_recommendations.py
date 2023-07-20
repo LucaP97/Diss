@@ -1,169 +1,119 @@
-import numpy as np
-import tensorflow as tf
-import tensorflow_recommenders as tfrs
-# from tensorflow.keras.layers.experimental.preprocessing import StringLookup, Normalization
-from tensorflow.keras.layers import StringLookup, Normalization
-from sklearn.preprocessing import LabelEncoder
+from django.core.management.base import BaseCommand
 from ...models import *
 from users.models import User
+import numpy as np
+import tensorflow as tf
+from typing import Dict, Text
+import tensorflow_recommenders as tfrs
+from tensorflow.keras.layers.experimental.preprocessing import StringLookup
 
-# print(len(users))
-# print(len(tweets))
-# print(len(ratings))
-# print(len(favourite_teams))
+class Command(BaseCommand):
+    help = 'Description of your command'
 
+    def handle(self, *args, **options):
+        # Rating data
+        ratings = Rating.objects.all().exclude(user_id=152)  # Exclude the user with id 152
+        # Tweet data
+        tweets = Tweets.objects.filter(id__in=[rating.tweet_id for rating in ratings])
 
-def create_dataset():
-    # Fetch all necessary data from the database
-    rating_objects = Rating.objects.all().exclude(user_id=152)  # Exclude the user with id 152
+        # Convert to lists
+        ratings_list = list(ratings.values("tweet_id", "user_id"))
+        tweets_list = list(tweets.values_list("id", flat=True))
 
-    tweet_ids = [rating.tweet_id for rating in rating_objects]
-    tweet_objects = Tweets.objects.filter(id__in=tweet_ids)
+        # Convert lists of dictionaries to a single dictionary with arrays for each feature
+        ratings_dict = {
+            "tweet_id": [d["tweet_id"] for d in ratings_list],
+            "user_id": [d["user_id"] for d in ratings_list],
+        }
 
-    tweet_texts = [rating.tweet.text for rating in rating_objects]
-    sentiments = [rating.tweet.sentiment if rating.tweet.sentiment is not None else "NEUTRAL" for rating in rating_objects]
+        # convert the list of dictionaries into tensors
+        ratings_tf = tf.data.Dataset.from_tensor_slices(ratings_dict).map(lambda x: {k: tf.as_string(v) for k, v in x.items()})
+        tweets_tf = tf.data.Dataset.from_tensor_slices(tweets_list).map(tf.as_string)
 
-    user_ids = [rating.user_id for rating in rating_objects]
-    ratings = [rating.rating for rating in rating_objects]
+        # Select the basic features
+        ratings_tf = ratings_tf.map(lambda x: {
+            "tweet_id": x["tweet_id"],
+            "user_id": x["user_id"]
+        })
+        tweets_tf = tweets_tf.map(lambda x: x)
 
-    # Loop over each rating and get the favourite team of the user who made that rating
-    favourite_teams = []
-    for rating in rating_objects:
-        user_id = rating.user_id
-        favourite_team = User.objects.get(id=user_id).profile.favourite_team
-        favourite_teams.append(favourite_team)
+        # Building the vocabularies
+        user_ids_vocabulary = StringLookup(mask_token=None)
+        user_ids_vocabulary.adapt(ratings_tf.map(lambda x: x["user_id"]))
 
-    data = {
-        'user': user_ids,
-        'tweet': tweet_ids,
-        'rating': ratings,
-        'text': tweet_texts,
-        'sentiment': sentiments,
-        'favourite_team': favourite_teams,
-    }
-    
-    for key, value in data.items():
-        print(f"{key}: {len(value)}")
+        tweet_ids_vocabulary = StringLookup(mask_token=None)
+        tweet_ids_vocabulary.adapt(tweets_tf)
 
-    dataset = tf.data.Dataset.from_tensor_slices(data)
-    dataset = dataset.shuffle(len(user_ids)).batch(32)
+        class TweetModel(tfrs.Model):
 
-    return dataset
+            def __init__(
+                    self,
+                    user_model: tf.keras.Model,
+                    tweet_model: tf.keras.Model,
+                    task: tfrs.tasks.Retrieval):
+                super().__init__()
 
+                # Set up user and tweet representations.
+                self.user_model = user_model
+                self.tweet_model = tweet_model
 
-class UserModel(tf.keras.Model):
-    def __init__(self, user_ids, favourite_teams):
-        super().__init__()
+                # Set up a retrieval task.
+                self.task = task
 
-        self.user_embedding = tf.keras.layers.Embedding(len(np.unique(user_ids)), 32)
-        self.favourite_team_embedding = tf.keras.layers.Embedding(len(np.unique(favourite_teams)), 32)
+            def compute_loss(self, features: Dict[Text, tf.Tensor], training=False) -> tf.Tensor:
+                # Define how the loss is computed.
 
-    def call(self, inputs):
-        return tf.concat([
-            self.user_embedding(inputs["user"]),
-            self.favourite_team_embedding(inputs["favourite_team"]),
-        ], axis=1)
+                user_embeddings = self.user_model(features["user_id"])
+                tweet_embeddings = self.tweet_model(features["tweet_id"])
 
-# class TweetModel(tf.keras.Model):
-#     def __init__(self, tweet_texts, sentiments):
-#         super().__init__()
+                return self.task(user_embeddings, tweet_embeddings)
+            
+        # define user and tweet models
+        user_model = tf.keras.Sequential([
+            user_ids_vocabulary,
+            tf.keras.layers.Embedding(user_ids_vocabulary.vocabulary_size(), 64)
+        ])
+        tweet_model = tf.keras.Sequential([
+            tweet_ids_vocabulary,
+            tf.keras.layers.Embedding(tweet_ids_vocabulary.vocabulary_size(), 64)
+        ])
 
-#         self.tweet_embedding = tf.keras.layers.Embedding(len(np.unique(tweet_texts)), 32)
-#         self.sentiment_embedding = tf.keras.layers.Embedding(len(np.unique(sentiments)), 32)
-
-#     def call(self, inputs):
-#         return tf.concat([
-#             self.tweet_embedding(inputs["text"]),
-#             self.sentiment_embedding(inputs["sentiment"]),
-#         ], axis=1)
-
-
-# class TweetRecommendationModel(tfrs.Model):
-#     def __init__(self, user_model, tweet_model, tweet_texts):
-#         super().__init__()
-#         self.user_model = user_model
-#         self.tweet_model = tweet_model
-#         self.tweet_dataset = tf.data.Dataset.from_tensor_slices(tweet_texts)
-#         self.task = tfrs.tasks.Retrieval(
-#             metrics=tfrs.metrics.FactorizedTopK(
-#                 candidates=self.tweet_dataset.batch(128).map(self.tweet_model),
-#             ),
-#         )
-
-class TweetModel(tf.keras.Model):
-    def __init__(self, tweet_ids, sentiments):
-        super().__init__()
-        self.tweet_embedding = tf.keras.layers.Embedding(len(np.unique(tweet_ids)) + 1, 32, mask_zero=True)
-        self.sentiment_embedding = tf.keras.layers.Embedding(len(np.unique(sentiments)) + 1, 32, mask_zero=True)
-
-    def call(self, inputs):
-        tweet_input = inputs["tweet"]
-        sentiment_input = inputs["sentiment"]
-
-        mask = self.tweet_embedding.compute_mask(tweet_input)
-        
-        return tf.concat([
-            self.tweet_embedding(tweet_input),
-            self.sentiment_embedding(sentiment_input),
-        ], axis=1) * tf.cast(mask, tf.float32)
-
-# class TweetModel(tf.keras.Model):
-#     def __init__(self, tweet_ids, sentiments):
-#         super().__init__()
-
-#         self.tweet_embedding = tf.keras.layers.Embedding(len(np.unique(tweet_ids)), 32)
-#         self.sentiment_embedding = tf.keras.layers.Embedding(len(np.unique(sentiments)), 32)
-
-#     def call(self, inputs):
-#         return tf.concat([
-#             self.tweet_embedding(inputs["tweet"]),
-#             self.sentiment_embedding(inputs["sentiment"]),
-#         ], axis=1)
-
-class TweetRecommendationModel(tfrs.Model):
-    def __init__(self, user_model, tweet_model, tweet_ids):
-        super().__init__()
-        self.user_model = user_model
-        self.tweet_model = tweet_model
-        self.tweet_dataset = tf.data.Dataset.from_tensor_slices(tweet_ids)
-        for data in self.tweet_dataset.take(1):
-            print('*** HERE ***')
-            print(data)
-        self.task = tfrs.tasks.Retrieval(
-            metrics=tfrs.metrics.FactorizedTopK(
-                candidates=self.tweet_dataset.batch(128).map(self.tweet_model),
-            ),
+        # define objectives
+        task = tfrs.tasks.Retrieval(metrics=tfrs.metrics.FactorizedTopK(
+            tweets_tf.batch(128).map(tweet_model)
+            )
         )
 
-    def compute_loss(self, features, training=False):
-        user_embeddings = self.user_model({"user": features["user"], "favourite_team": features["favourite_team"]})
-        tweet_embeddings = self.tweet_model({"text": features["text"], "sentiment": features["sentiment"]})
-        return self.task(user_embeddings, tweet_embeddings)
+        # Create a retrieval model.
+        model = TweetModel(user_model, tweet_model, task)
+        model.compile(optimizer=tf.keras.optimizers.Adagrad(0.5))
 
-# Fetch all necessary data from the database
-tweet_objects = Tweets.objects.all()
-rating_objects = Rating.objects.exclude(user_id=152)  # Exclude the user with id 152
+        # Train for 3 epochs.
+        model.fit(ratings_tf.batch(4096), epochs=3)
 
-# tweet_texts = [tweet.text for tweet in tweet_objects]
-tweet_ids = [tweet.id for tweet in tweet_objects]
-sentiments = [tweet.sentiment for tweet in tweet_objects]
+        # Use brute-force search to set up retrieval using the trained representations.
+        index = tfrs.layers.factorized_top_k.BruteForce(model.user_model)
+        index.index_from_dataset(
+            tweets_tf.batch(100).map(lambda tweet_id: (tweet_id, model.tweet_model(tweet_id)))
+        )
 
-user_ids = [rating.user_id for rating in rating_objects]
-favourite_teams = [user.profile.favourite_team for user in User.objects.exclude(id=152)]  # Exclude the user with id 152
+        # Get all users
+        user_ids = [user["id"] for user in User.objects.values("id")]
 
-# Create the dataset
-dataset = create_dataset()
+        # For each user
+        for user_id in user_ids:
 
-# Define your model instances
-user_model = UserModel(user_ids, favourite_teams)
-# tweet_model = TweetModel(tweet_texts, sentiments)
-tweet_model = TweetModel(tweet_ids, sentiments)
-# model = TweetRecommendationModel(user_model, tweet_model, tweet_texts)
-model = TweetRecommendationModel(user_model, tweet_model, tweet_ids)
+            # Get recommendations.
+            _, tweet_ids = index(np.array([str(user_id)]))
+            # print(f"Top 3 recommendations for user {user_id}: {tweet_ids[0, :3]}")
 
-# Compiling the model
-model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
+            # Retrieve the User instance.
+            user_instance = User.objects.get(id=user_id)
 
-# Fit the model
-model.fit(dataset, epochs=5)
+            # Save recommendations to the database
+            for tweet_id in tweet_ids[0, :10]:
+                # Retrieve the Tweets instance.
+                tweet_instance = Tweets.objects.get(id=tweet_id.numpy().decode())
 
+                # Create a new TFRSRecommendations instance and save it.
+                TFRSRecommendations.objects.create(user=user_instance, tweet=tweet_instance)

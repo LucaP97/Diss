@@ -76,7 +76,7 @@ from surprise import SVD, SVDpp, NormalPredictor
 from surprise import Dataset
 from surprise import accuracy
 from surprise import Reader
-from surprise.model_selection import cross_validate, train_test_split
+from surprise.model_selection import cross_validate, train_test_split, GridSearchCV
 import pandas as pd
 from django.core.management.base import BaseCommand
 from ...models import *
@@ -99,7 +99,7 @@ class Command(BaseCommand):
         data = Dataset.load_from_df(df_ratings[['user_id', 'tweet_id', 'rating']], reader)
 
         # Define the algorithm objects
-        algo_SVD = SVD()
+        algo_SVD = SVD(n_epochs=10, lr_all=0.001, reg_all=1)
 
         def get_top_n(predictions, n=10):
             '''
@@ -136,8 +136,8 @@ class Command(BaseCommand):
             user = User.objects.get(id=uid)
             for iid, _ in user_ratings:
                 tweet = Tweets.objects.get(id=iid)
-                recommendation = SVDRecommendations(user=user, tweet=tweet)
-                recommendation.save()
+                # recommendation = SVDRecommendations(user=user, tweet=tweet)
+                # recommendation.save()
 
         print("Running 5-fold cross-validation for SVD...")
         cross_validate(algo_SVD, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)

@@ -160,3 +160,21 @@ class SVDRecommendationSerializer(serializers.ModelSerializer):
         model = SVDRecommendations
         fields = ['id', 'user', 'tweet']
 
+class HybridRecommendationSerializer(serializers.ModelSerializer):
+    tweet = TweetSimpleSerializer()
+    class Meta:
+        model = SVDRecommendations
+        fields = ['id', 'user', 'tweet']
+
+class KNNRecommendationSerializer(serializers.ModelSerializer):
+    tweet = TweetSimpleSerializer()
+    class Meta:
+        model = SVDRecommendations
+        fields = ['id', 'user', 'tweet']
+
+class TFRSRecommendationSerializer(serializers.ModelSerializer):
+    tweet = TweetSimpleSerializer()
+    class Meta:
+        model = SVDRecommendations
+        fields = ['id', 'user', 'tweet']
+

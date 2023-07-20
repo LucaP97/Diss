@@ -1,6 +1,6 @@
 from collections import defaultdict
 from surprise import KNNBasic, Dataset, Reader, accuracy
-from surprise.model_selection import train_test_split
+from surprise.model_selection import GridSearchCV, train_test_split
 import pandas as pd
 from django.core.management.base import BaseCommand
 from ...models import *
@@ -18,11 +18,18 @@ class Command(BaseCommand):
 
         reader = Reader(rating_scale=(1, 5))
 
-        # The columns must correspond to user id, item id and ratings (in that order).
         data = Dataset.load_from_df(df_ratings[['user_id', 'tweet_id', 'rating']], reader)
 
-        # Define the algorithm objects
-        algo_KNN = KNNBasic(k=20, sim_options={'name': 'pearson_baseline', 'user_based': False})  
+        param_grid = {'k': [20, 50, 100], 'sim_options': {'name': ['msd', 'cosine', 'pearson_baseline'], 'user_based': [True, False]}}
+
+        gs = GridSearchCV(KNNBasic, param_grid, measures=['rmse', 'mae'], cv=5)
+
+        gs.fit(data)
+
+        print(gs.best_score['rmse'])
+        print(gs.best_params['rmse'])
+
+        algo_KNN = gs.best_estimator['rmse']
 
         trainset, testset = train_test_split(data, test_size=0.2)
 
@@ -33,28 +40,20 @@ class Command(BaseCommand):
         print('KNN RMSE:', accuracy.rmse(predictions_KNN))
         print('KNN MAE:', accuracy.mae(predictions_KNN))
 
-        antitestset = trainset.build_anti_testset()
+        top_n_KNN = self.get_top_n(predictions_KNN, n=10)
 
-        predictions_KNN_antitestset = algo_KNN.test(antitestset)
-
-        top_n = self.get_top_n(predictions_KNN_antitestset, n=10)
-
-        for uid, user_ratings in top_n.items():
-            user = User.objects.get(id=uid)
-            for iid, _ in user_ratings:
-                tweet = Tweets.objects.get(id=iid)
-                # recommendation = KNNRecommendations(user=user, tweet=tweet)
-                # recommendation.save()
+        # for uid, user_ratings in top_n_KNN.items():
+        #     print(f"User {uid}:")
+        #     for iid, rating in user_ratings:
+        #         print(f"\tItem {iid} with predicted rating {rating}")
 
     def get_top_n(self, predictions, n=10):
         '''Return the top-N recommendation for each user from a set of predictions.'''
 
-        # First map the predictions to each user.
         top_n = defaultdict(list)
         for prediction in predictions:
             top_n[prediction.uid].append((prediction.iid, prediction.est))
 
-        # Then sort the predictions for each user and retrieve the k highest ones.
         for uid, user_ratings in top_n.items():
             user_ratings.sort(key=lambda x: x[1], reverse=True)
             top_n[uid] = user_ratings[:n]
