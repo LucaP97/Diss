@@ -8,6 +8,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.filters import SearchFilter 
 from rest_framework.decorators import action
 from rest_framework import status
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.decorators import action
 import requests
 import tweepy
 import json
@@ -92,118 +95,139 @@ from config import *
 #         return Response(serializer.data)
     
 
-api_key = twitter_api_key
-api_secret_key = twitter_api_secret_key
+# api_key = twitter_api_key
+# api_secret_key = twitter_api_secret_key
 
-access_token = twitter_access_token
-access_token_secret = twitter_access_token_secret
+# access_token = twitter_access_token
+# access_token_secret = twitter_access_token_secret
 
 
 
-auth = tweepy.OAuthHandler(api_key, api_secret_key)
-auth.set_access_token(access_token, access_token_secret)
+# auth = tweepy.OAuthHandler(api_key, api_secret_key)
+# auth.set_access_token(access_token, access_token_secret)
 
-# ################################
-# # tweets for build data set
+# # ################################
+# # # tweets for build data set
 
-class SpecificTwitterAccountTweets(APIView):
-    def get(self, request):
-        screen_name = "TalkingWolves" # specify the account here
+# class SpecificTwitterAccountTweets(APIView):
+#     def get(self, request):
+#         screen_name = "TalkingWolves" # specify the account here
 
-        num_of_tweets = 200 # Number of tweets you want to pull
+#         num_of_tweets = 200 # Number of tweets you want to pull
 
-        auth = tweepy.OAuthHandler(api_key, api_secret_key)
-        auth.set_access_token(access_token, access_token_secret)
+#         auth = tweepy.OAuthHandler(api_key, api_secret_key)
+#         auth.set_access_token(access_token, access_token_secret)
 
-        api = tweepy.API(auth)
+#         api = tweepy.API(auth)
 
-        tweets = api.user_timeline(screen_name=screen_name, count=num_of_tweets, tweet_mode='extended')
+#         tweets = api.user_timeline(screen_name=screen_name, count=num_of_tweets, tweet_mode='extended')
 
-        comprehend = boto3.client(service_name='comprehend', region_name='eu-west-2')
+#         comprehend = boto3.client(service_name='comprehend', region_name='eu-west-2')
 
-        # Map the relevant information to a list of dictionaries
-        tweet_info = []
-        for tweet in tweets:
-            # constructing the tweet url
-            tweet_url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
+#         # Map the relevant information to a list of dictionaries
+#         tweet_info = []
+#         for tweet in tweets:
+#             # constructing the tweet url
+#             tweet_url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
             
-            # getting the media urls if exist
-            media_urls = []
-            if 'media' in tweet.entities:
-                media_urls = [media['media_url_https'] for media in tweet.entities['media']]
+#             # getting the media urls if exist
+#             media_urls = []
+#             if 'media' in tweet.entities:
+#                 media_urls = [media['media_url_https'] for media in tweet.entities['media']]
             
-            # getting the urls included in the tweet
-            included_urls = [url['expanded_url'] for url in tweet.entities['urls']]
+#             # getting the urls included in the tweet
+#             included_urls = [url['expanded_url'] for url in tweet.entities['urls']]
 
-            # Call Amazon Comprehend for Sentiment Analysis
-            sentiment_response = comprehend.detect_sentiment(Text=tweet.full_text, LanguageCode='en')
+#             # Call Amazon Comprehend for Sentiment Analysis
+#             sentiment_response = comprehend.detect_sentiment(Text=tweet.full_text, LanguageCode='en')
 
-            # Call Amazon Comprehend for Key Phrase Extraction and Entity Recognition
-            key_phrases = comprehend.detect_key_phrases(Text=tweet.full_text, LanguageCode='en')['KeyPhrases']
-            entities = comprehend.detect_entities(Text=tweet.full_text, LanguageCode='en')['Entities']
+#             # Call Amazon Comprehend for Key Phrase Extraction and Entity Recognition
+#             key_phrases = comprehend.detect_key_phrases(Text=tweet.full_text, LanguageCode='en')['KeyPhrases']
+#             entities = comprehend.detect_entities(Text=tweet.full_text, LanguageCode='en')['Entities']
 
-            # appending the information to the list
-            tweet_info.append({
-                "text": tweet.full_text,
-                "created_at": tweet.created_at,
-                "retweet_count": tweet.retweet_count,
-                "favorite_count": tweet.favorite_count,
-                "tweet_url": tweet_url,
-                "media_urls": media_urls,
-                "included_urls": included_urls,  # added this line
-                "place": tweet.place,
-                "sentiment": sentiment_response['Sentiment'],  # added this line
-                "sentiment_scores": sentiment_response['SentimentScore'],  # added this line
-                "key_phrases": key_phrases,
-                "entities": entities
-            })
+#             # appending the information to the list
+#             tweet_info.append({
+#                 "text": tweet.full_text,
+#                 "created_at": tweet.created_at,
+#                 "retweet_count": tweet.retweet_count,
+#                 "favorite_count": tweet.favorite_count,
+#                 "tweet_url": tweet_url,
+#                 "media_urls": media_urls,
+#                 "included_urls": included_urls,  # added this line
+#                 "place": tweet.place,
+#                 "sentiment": sentiment_response['Sentiment'],  # added this line
+#                 "sentiment_scores": sentiment_response['SentimentScore'],  # added this line
+#                 "key_phrases": key_phrases,
+#                 "entities": entities
+#             })
 
-            def preprocess_key_phrases(key_phrases):
-                return [phrase['Text'] for phrase in key_phrases]
+#             def preprocess_key_phrases(key_phrases):
+#                 return [phrase['Text'] for phrase in key_phrases]
             
-            def preprocess_entities(entities):
-                return [{'Type': entity['Type'], 'Text': entity['Text']} for entity in entities]
+#             def preprocess_entities(entities):
+#                 return [{'Type': entity['Type'], 'Text': entity['Text']} for entity in entities]
 
-            processed_key_phrases = preprocess_key_phrases(key_phrases)
-            processed_entities = preprocess_entities(entities)
+#             processed_key_phrases = preprocess_key_phrases(key_phrases)
+#             processed_entities = preprocess_entities(entities)
 
-            Tweets.objects.create(
-                text = tweet.full_text,
-                created_at = tweet.created_at,
-                retweet_count = tweet.retweet_count,
-                favorite_count = tweet.favorite_count,
-                tweet_url = tweet_url,
-                media_urls = media_urls,
-                included_urls = included_urls,
-                place = tweet.place,
-                sentiment = sentiment_response['Sentiment'],
-                sentiment_scores = sentiment_response['SentimentScore'],
-                key_phrases = processed_key_phrases,
-                entities = processed_entities
-            )
+#             Tweets.objects.create(
+#                 text = tweet.full_text,
+#                 created_at = tweet.created_at,
+#                 retweet_count = tweet.retweet_count,
+#                 favorite_count = tweet.favorite_count,
+#                 tweet_url = tweet_url,
+#                 media_urls = media_urls,
+#                 included_urls = included_urls,
+#                 place = tweet.place,
+#                 sentiment = sentiment_response['Sentiment'],
+#                 sentiment_scores = sentiment_response['SentimentScore'],
+#                 key_phrases = processed_key_phrases,
+#                 entities = processed_entities
+#             )
 
-        serializer = TweetSerializer(tweet_info, many=True)
+#         serializer = TweetSerializer(tweet_info, many=True)
 
-        return Response(serializer.data)
+#         return Response(serializer.data)
     
 # class AllTweetsViewSet(ModelViewSet):
 #     queryset = Tweets.objects.all()
 #     serializer_class = AllTweetsSerializer
     
 
-class ProfileViewSet(ModelViewSet):
-    def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.is_superuser:
-            return Profile.objects.all()
-        if self.request.user.is_authenticated:
-            return Profile.objects.filter(user=self.request.user)
-        else:
-            return status.HTTP_401_UNAUTHORIZED
+# class ProfileViewSet(ModelViewSet):
+#     def get_queryset(self):
+#         if self.request.user.is_authenticated and self.request.user.is_superuser:
+#             return Profile.objects.all()
+#         if self.request.user.is_authenticated:
+#             return Profile.objects.filter(user=self.request.user)
+#         else:
+#             return status.HTTP_401_UNAUTHORIZED
 
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return ProfileRegistrationSerializer
-        return ProfileSerializer
+#     def get_serializer_class(self):
+#         if self.request.method == 'POST':
+#             return ProfileRegistrationSerializer
+#         return ProfileSerializer
+
+class ProfileViewSet(CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+
+    @action(detail=False, methods=['GET', 'PUT'])
+    def me(self, request):
+        profile = Profile.objects.get(user_id=request.user.id)
+        if request.method == 'GET':
+            serializer = ProfileSerializer(profile)
+            return Response(serializer.data)
+        elif request.method == 'PUT':
+            serializer = ProfileSerializer(profile, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        
+class ProfileRegistrationViewSet(CreateModelMixin, GenericViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileRegistrationSerializer
+
         
 
 class RatingViewSet(ModelViewSet):

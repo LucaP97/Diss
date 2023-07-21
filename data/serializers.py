@@ -58,10 +58,12 @@ from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 ###################
 
 class ProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Profile
-        fields = ['user', 'date_of_birth', 'place_of_birth', 'favourite_team', 'current_location']
-
+        fields = ['id', 'user_id', 'date_of_birth', 'place_of_birth', 'favourite_team', 'current_location']
+        # 'user',
 
 class UserCreateSerializer(BaseUserCreateSerializer):
     class Meta(BaseUserCreateSerializer.Meta):
@@ -108,6 +110,9 @@ class ProfileRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['user', 'date_of_birth', 'place_of_birth', 'favourite_team', 'current_location']
+
+
+
 
 
 ###################

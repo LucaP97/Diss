@@ -5,7 +5,7 @@ from . import views
 
 router = routers.DefaultRouter()
 # router.register()
-router.register('profile', views.ProfileViewSet, basename='profile')
+router.register('register', views.ProfileRegistrationViewSet, basename='register')
 router.register('tweets', views.TweetViewSet)
 router.register('ratings', views.RatingViewSet, basename='ratings')
 router.register('svd_recommendations', views.SVDRecommendationsViewSet, basename='svd_recommendations')

@@ -12,10 +12,10 @@ class Tweets(models.Model):
     media_urls = JSONField()
     included_urls = JSONField()
     place = models.CharField(max_length=200, null=True, blank=True)
-    sentiment = models.CharField(max_length=50)
-    sentiment_scores = JSONField()
-    key_phrases = JSONField()
-    entities = JSONField()
+    sentiment = models.CharField(max_length=50, null=True, blank=True)
+    sentiment_scores = JSONField(null=True, blank=True)
+    key_phrases = JSONField(null=True, blank=True)
+    entities = JSONField(null=True, blank=True)
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -98,7 +99,7 @@ DATABASES = {
         'NAME': 'dissdb',
         'USER': 'root',
         'PASSWORD': 'toor',
-        'HOST': 'localhost',
+        'HOST': '172.17.48.1',  #'localhost',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
@@ -152,6 +153,13 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = "users.User"
 
+DJOSER = {
+    'SERIALIZERS': {
+        'user_create': 'users.serializers.UserCreateSerializer',
+        'current_user': 'users.serializers.UserSerializer',
+    }
+}
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -166,3 +174,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 # STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_URL = '/media/'
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/1'
+CELERY_BEAT_SCHEDULE = {
+    'generate_SVD_recommendations_task' : {
+        'task': 'mysite.tasks.generate_SVD_recommendations_task', 
+        'schedule': crontab(hour=0, minute=0)
+    },
+    'generate_KNN_recommendations_task' : {
+        'task': 'mysite.tasks.generate_KNN_recommendations_task', 
+        'schedule': crontab(hour=0, minute=0)
+    },
+    'generate_Hybrid_recommendations_task' : {
+        'task': 'mysite.tasks.generate_Hybrid_recommendations_task', 
+        'schedule': crontab(hour=0, minute=0)
+    },
+    'generate_TFRS_recommendations_task' : {
+        'task': 'mysite.tasks.generate_TFRS_recommendations_task', 
+        'schedule': crontab(hour=0, minute=0)
+    },
+}
