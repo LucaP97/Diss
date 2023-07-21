@@ -99,7 +99,7 @@ DATABASES = {
         'NAME': 'dissdb',
         'USER': 'root',
         'PASSWORD': 'toor',
-        'HOST': '172.17.48.1',  #'localhost',
+        'HOST': 'localhost', #'172.17.48.1',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',

@@ -1,38 +1,403 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title>Recommendations</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Bootstrap CSS CDN -->
+    <!-- Bootstrap CSS -->
     <link
-      rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
-      crossorigin="anonymous"
+      rel="stylesheet"
     />
-    <link rel="stylesheet" type="text/css" href="css/styles.css" />
+
+    <title>Landing Page</title>
   </head>
   <body>
-    <div id="tweetsContainer"></div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container">
+        <a class="navbar-brand" href="#">My Website</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ml-auto">
+            <div id="before-login">
+              <li class="nav-item">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  data-toggle="modal"
+                  data-target="#loginModal"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  data-toggle="modal"
+                  data-target="#registerModal"
+                >
+                  Register
+                </button>
+              </li>
+            </div>
+            <div id="after-login" style="display: none">
+              <li class="nav-item">
+                <a href="/account" class="btn btn-primary">Account</a>
+                <a href="/profile" class="btn btn-primary">Profile</a>
+                <button id="logout" class="btn btn-danger">Logout</button>
+              </li>
+            </div>
+          </ul>
+        </div>
+      </div>
+    </nav>
 
-    <!-- Bootstrap JS CDN (and dependencies) -->
-    <script
-      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-      crossorigin="anonymous"
-    ></script>
+    <!-- Login Modal -->
+    <div
+      class="modal fade"
+      id="loginModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="loginModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalLabel">Login</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="loginForm">
+              <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  placeholder="Enter username"
+                />
+              </div>
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  placeholder="Password"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
 
-    <!-- Your Custom JavaScript -->
-    <script src="js/main.js"></script>
+            <script>
+              document
+                .getElementById("loginForm")
+                .addEventListener("submit", function (event) {
+                  event.preventDefault();
+
+                  var username = document.getElementById("username").value;
+                  var password = document.getElementById("password").value;
+
+                  fetch("http://127.0.0.1:8000/auth/jwt/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      username: username,
+                      password: password,
+                    }),
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.access && data.refresh) {
+                        localStorage.setItem("access_token", data.access);
+                        localStorage.setItem("refresh_token", data.refresh);
+
+                        // Hide the 'Login' and 'Register' buttons and show the 'Account', 'Profile', and 'Logout' buttons
+                        document.getElementById("before-login").style.display =
+                          "none";
+                        document.getElementById("after-login").style.display =
+                          "block";
+
+                        alert("Login successful!");
+                      } else {
+                        alert(
+                          "Login failed. Please check your username and password."
+                        );
+                      }
+                    });
+                });
+
+              document
+                .getElementById("logout")
+                .addEventListener("click", function () {
+                  localStorage.removeItem("access_token");
+                  localStorage.removeItem("refresh_token");
+
+                  location.reload();
+                });
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <!-- Registration Modal -->
+    <div
+      class="modal fade"
+      id="registerModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="registerModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerModalLabel">Register</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="registerForm">
+              <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="firstName"
+                  placeholder="Enter first name"
+                />
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lastName"
+                  placeholder="Enter last name"
+                />
+              </div>
+              <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="regEmail"
+                  placeholder="Enter email"
+                />
+              </div>
+              <div class="form-group">
+                <label for="regUsername">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="regUsername"
+                  placeholder="Enter username"
+                />
+              </div>
+              <div class="form-group">
+                <label for="regPassword">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="regPassword"
+                  placeholder="Enter password"
+                />
+              </div>
+              <div class="form-group">
+                <label for="dateOfBirth">Date of Birth</label>
+                <input type="date" class="form-control" id="dateOfBirth" />
+              </div>
+              <div class="form-group">
+                <label for="placeOfBirth">Place of Birth</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="placeOfBirth"
+                  placeholder="Enter place of birth"
+                />
+              </div>
+              <div class="form-group">
+                <label for="favouriteTeam">Favourite Team</label>
+                <select class="form-control" id="favouriteTeam">
+                  <option value="">Select your favourite team</option>
+                  <option value="Arsenal">Arsenal</option>
+                  <option value="Aston Villa">Aston Villa</option>
+                  <option value="Bournemouth">Bournemouth</option>
+                  <option value="Brentford">Brentford</option>
+                  <option value="Brighton and Hove Albion">
+                    Brighton and Hove Albion
+                  </option>
+                  <option value="Burnley">Burnley</option>
+                  <option value="Chelsea">Chelsea</option>
+                  <option value="Crystal Palace">Crystal Palace</option>
+                  <option value="Everton">Everton</option>
+                  <option value="Fulham">Fulham</option>
+                  <option value="Liverpool">Liverpool</option>
+                  <option value="Luton Town">Luton Town</option>
+                  <option value="Manchester City">Manchester City</option>
+                  <option value="Manchester United">Manchester United</option>
+                  <option value="Newcastle United">Newcastle United</option>
+                  <option value="Nottinham Forest">Nottinham Forest</option>
+                  <option value="Sheffield United">Sheffield United</option>
+                  <option value="Tottenham Hotspur">Tottenham Hotspur</option>
+                  <option value="West Ham United">West Ham United</option>
+                  <option value="Wolverhampton Wanderers">
+                    Wolverhampton Wanderers
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="currentLocation">Current Location</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="currentLocation"
+                  placeholder="Enter your current location"
+                />
+              </div>
+              <button type="submit" class="btn btn-success">Submit</button>
+            </form>
+
+            <script>
+              document
+                .getElementById("registerForm")
+                .addEventListener("submit", function (event) {
+                  event.preventDefault();
+
+                  var firstName = document.getElementById("firstName").value;
+                  var lastName = document.getElementById("lastName").value;
+                  var email = document.getElementById("regEmail").value;
+                  var username = document.getElementById("regUsername").value;
+                  var password = document.getElementById("regPassword").value;
+                  var dateOfBirth =
+                    document.getElementById("dateOfBirth").value;
+                  var placeOfBirth =
+                    document.getElementById("placeOfBirth").value;
+                  var favouriteTeam =
+                    document.getElementById("favouriteTeam").value;
+                  var currentLocation =
+                    document.getElementById("currentLocation").value;
+
+                  fetch("http://127.0.0.1:8000/data/register/", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      user: {
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        username: username,
+                        password: password,
+                      },
+                      date_of_birth: dateOfBirth,
+                      place_of_birth: placeOfBirth,
+                      favourite_team: favouriteTeam,
+                      current_location: currentLocation,
+                    }),
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.user) {
+                        alert("Registration successful!");
+                      } else {
+                        alert(
+                          "Registration failed. Please check your details."
+                        );
+                      }
+                    });
+                });
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <header class="bg-primary text-white text-center py-5">
+      <h1>Welcome to Our Site!</h1>
+      <p>Find out more about what we do and how we can help you.</p>
+    </header>
+
+    <main class="container my-5">
+      <div class="row" id="api-card-container">
+        <!-- Cards will be appended here by JavaScript -->
+      </div>
+    </main>
+
+    <footer class="bg-dark text-white text-center py-4">
+      <p>&copy; 2023 Our Site. All rights reserved.</p>
+    </footer>
+
+    <!-- jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript to fetch and display the API data -->
+    <script>
+      fetch("http://127.0.0.1:8000/data/")
+        .then((response) => response.json())
+        .then((data) => {
+          const container = document.getElementById("api-card-container");
+
+          const endpointsToInclude = [
+            "tweets",
+            "svd_recommendations",
+            "hybrid_recommendations",
+            "knn_recommendations",
+            "tfrs_recommendations",
+          ];
+
+          const endpointsToUrl = {
+            svd_recommendations: "http://127.0.0.1:8080/frontend/svd_feed.html",
+            // ... You can define other redirects here
+          };
+
+          for (let endpoint in data) {
+            if (endpointsToInclude.includes(endpoint)) {
+              const url = endpointsToUrl[endpoint] || data[endpoint];
+              const card = `
+                  <div class="col-lg-4 mb-4">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">${endpoint}</h5>
+                        <a href="${url}" class="btn btn-primary">Go to endpoint</a>
+                      </div>
+                    </div>
+                  </div>
+                `;
+
+              container.innerHTML += card;
+            }
+          }
+        });
+    </script>
   </body>
 </html>

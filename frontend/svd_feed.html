@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recommendations Feed</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row" id="recommendations-container">
+        <!-- Recommendations will be appended here by JavaScript -->
+      </div>
+    </div>
+
+    <script>
+      window.onload = function () {
+        // If user is not logged in, redirect them to login page
+        if (
+          !(
+            localStorage.getItem("access_token") &&
+            localStorage.getItem("refresh_token")
+          )
+        ) {
+          window.location.href = "http://127.0.0.1:8000/login";
+        }
+      };
+
+      fetch("http://127.0.0.1:8000/data/svd_recommendations/", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          const container = document.getElementById(
+            "recommendations-container"
+          );
+
+          // Iterate over each recommendation in the data
+          for (let recommendation of data) {
+            const card = `
+              <div class="col-lg-6 mb-4">
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">User ID: ${recommendation.user}</h5>
+                    <p class="card-text">Tweet ID: ${recommendation.tweet.id}</p>
+                    <p class="card-text">${recommendation.tweet.text}</p>
+                    <a href="${recommendation.tweet.tweet_url}" class="btn btn-primary" target="_blank">Go to tweet</a>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            container.innerHTML += card;
+          }
+        });
+    </script>
+
+    <!-- jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
