@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    restart: on-failure
+    volumes:
+      - .:/app
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis-data:/data
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    restart: always
+  celery:
+    build: .
+    command: celery -A mysite worker --loglevel=info
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+  celery-beat:
+    build: .
+    command: celery -A mysite beat --loglevel=info
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+volumes:
+  mysql-data:
+  redis-data:

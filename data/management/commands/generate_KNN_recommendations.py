@@ -43,8 +43,8 @@ class Command(BaseCommand):
             user = User.objects.get(id=uid)
             for iid, _ in user_ratings:
                 tweet = Tweets.objects.get(id=iid)
-                # recommendation = KNNRecommendations(user=user, tweet=tweet)
-                # recommendation.save()
+                recommendation = KNNRecommendations(user=user, tweet=tweet)
+                recommendation.save()
 
     def get_top_n(self, predictions, n=10):
         '''Return the top-N recommendation for each user from a set of predictions.'''

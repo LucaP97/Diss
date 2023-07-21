@@ -11,7 +11,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        # Fetch all the records using Django's ORM
         ratings = Rating.objects.all().values_list('user__id', 'tweet__id', 'rating')
 
         # Convert tuples to pandas DataFrame
@@ -23,7 +22,6 @@ class Command(BaseCommand):
         # The columns must correspond to user id, item id and ratings (in that order).
         data = Dataset.load_from_df(df_ratings[['user_id', 'tweet_id', 'rating']], reader)
 
-        # Define a parameter grid to search over
         param_grid_svd = {
             "n_epochs": [5, 10, 20],
             "lr_all": [0.002, 0.005, 0.01],
@@ -38,11 +36,9 @@ class Command(BaseCommand):
             }
         }
 
-        # Run a grid search for the SVD algorithm
         gs_svd = GridSearchCV(SVD, param_grid_svd, measures=["rmse", "mae"], cv=3)
         gs_svd.fit(data)
 
-        # Run a grid search for the KNNBasic algorithm
         gs_knn = GridSearchCV(KNNBasic, param_grid_knn, measures=["rmse", "mae"], cv=3)
         gs_knn.fit(data)
 
@@ -54,10 +50,8 @@ class Command(BaseCommand):
         algo_SVD = SVD(**gs_svd.best_params["rmse"])
         algo_KNN = KNNBasic(**gs_knn.best_params["rmse"])
 
-        # Split the dataset into training set and test set
         trainset, testset = train_test_split(data, test_size=0.2)
 
-        # Train all algorithms on the training set
         algo_SVD.fit(trainset)
         algo_KNN.fit(trainset)
 
@@ -73,8 +67,8 @@ class Command(BaseCommand):
         # Predict ratings for all pairs (u, i) that are NOT in the training set.
         antitestset = trainset.build_anti_testset()
 
-        predictions_SVD_antitestset = algo_SVD.test(antitestset)  # Get predictions from SVD
-        predictions_KNN_antitestset = algo_KNN.test(antitestset)  # Get predictions from User-based KNN
+        predictions_SVD_antitestset = algo_SVD.test(antitestset)
+        predictions_KNN_antitestset = algo_KNN.test(antitestset)
 
         # Combine predictions
         combined_predictions = []
