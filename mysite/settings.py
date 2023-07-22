@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'djoser',
     'data',
     'debug_toolbar',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -194,4 +195,9 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'mysite.tasks.generate_TFRS_recommendations_task', 
         'schedule': crontab(hour=0, minute=0)
     },
+}
+
+GRAPH_MODELS = {
+  'all_applications': True,
+  'group_models': True,
 }

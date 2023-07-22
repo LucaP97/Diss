@@ -1,7 +1,15 @@
 # Diss
 
-docker run -d -p 6379:6379 redis
+Recommendation algorithms are under data/management/commands
 
-celery -A mysite worker --loglevel=info
+# to build application
 
-celery -A mysite beat
+docker-compose up --build
+
+# to run application
+
+docker-compose up
+
+# backend is at port 8000
+
+# frontend is at port 80

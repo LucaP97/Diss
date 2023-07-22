@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   web:
     build: .
@@ -45,5 +44,4 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
 volumes:
-  mysql-data:
   redis-data:
